@@ -6,9 +6,9 @@
   
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
   
-  2 -> In the VSCODE open the terminal and put this comands:
-    yarn instal
-      after install put this command
+  2 -> In the VSCODE open the terminal and put this comands:                                                                                                         
+    'yarn instal'                                                                                                                                                   
+          after install put this command                                                                                                                             
      yarn start
      
  ------------------------------------------------------------------------------------------------------------------------------------------------------------------
