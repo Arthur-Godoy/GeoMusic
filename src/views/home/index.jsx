@@ -1,4 +1,4 @@
-import { Button, TextField, Grid, Typography, CircularProgress } from '@material-ui/core';
+import { Button, TextField, Grid, Typography, CircularProgress, TableContainer, TableBody, TableCell, TableRow, Table, TableHead } from '@material-ui/core';
 import Swal from 'sweetalert2';
 import { makeStyles } from '@material-ui/styles';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
@@ -90,12 +90,26 @@ const useStyles = makeStyles({
         position:'absolute',
         zIndex:3,
         top: 886,
+        paddingLeft: 100,
         '@media(max-width: 1380px)':{
             top: 680,
         },
         "@media (max-width: 900px)":{
             top: 1080,
         },
+    },
+
+    loadingContainer:{
+        position: 'absolute',
+        textAlign: 'center',
+        height: '100%',
+        width:'100%'
+    },
+
+    loadingCircle:{
+        position:'relative',
+        top:'45%',
+        transform: 'translateY(-50%)'
     },
 });
 
@@ -108,34 +122,31 @@ const Home = () => {
     const [cityTemp, setCityTemp] = useState('--');
     const [musicType, setMusicType] = useState('--');
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        api.weatherApi.params.q = cityName;
-    }, [cityName])
+    const [musicList, setMusicList] = useState(['']);
 
     const getTemp = () =>{
         setLoading(true)
+        api.weatherApi.params.q = cityName;
         axios.request(api.weatherApi).then(function (response) {
-            console.log(response.data)
             setInfoBoardCityName(response.data['name'] + ', ' + response.data['sys']['country'])
             setLon(response.data['coord']['lon'])
             setlat(response.data['coord']['lat']) 
-            cityTemp === response.data['main']['temp'] ? (setLoading(false)):(setCityTemp(response.data['main']['temp']))
+            cityTemp === response.data['main']['temp'] ? (setLoading(false)):(setCityTemp(response.data['main']['temp'] + '°C'))
         }).catch(function (error) {
-            setLoading(false);
             Swal.fire({
                 icon: 'error',
                 title: 'Erro na Pesquisa',
                 text: 'Verifique o nome da cidade digitada',
                 showConfirmButton: false,
             })
+            setLoading(false)
         });
     }
 
     useEffect(() => {
         if(cityTemp !== '--'){
             if(cityTemp > 32){
-                setMusicType('funk')
+                setMusicType('eletrônica')
             }else if(cityTemp > 24){
                 setMusicType('pagode')
             }else if(cityTemp > 16){
@@ -144,69 +155,123 @@ const Home = () => {
                 setMusicType('lofi')
             }
         }
-        setLoading(false)
     }, [cityTemp])
+
+    useEffect(() => {       
+        if(musicType !== '--'){
+            api.youtubeApi.params.q = musicType
+            axios.request(api.youtubeApi).then(function (response) {
+                setMusicList(response.data['items'])
+                setTimeout(setLoading(false),2000)
+            }).catch(function (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro ao gerar lista do Youtube',
+                    text: 'Estamos trabalhando para concerta-lo o mais rápido possivel',
+                    showConfirmButton: false,
+                })
+                setLoading(false)
+            }) 
+        }
+    },[musicType])
 
     return (
         <div>
-            <div className={classes.background}>
-                <img className={classes.image} src="logo.png" alt="Geo Music" />
-                <TextField
-                    className={classes.textField} 
-                    label="Digite o nome da cidade" 
-                    variant="filled" 
-                    onChange={(e) =>{setCityName(e.target.value)}}
-                    onKeyDown={(e) => {e.key === 'Enter' ? (getTemp()):(console.log('.'))} }
-                />
-                <Button 
-                    variant='contained' 
-                    style={{
-                        backgroundColor: 'black',
-                        height: 56,
-                        borderRadius: '0px 15px 15px 0px'
-                    }}
-                    disabled={loading}
-                    onClick={ () => {getTemp()}}
-                >
-                        {loading === true ? (<CircularProgress />):(<img src="icon-arrow.svg" alt="pesquisar"/> )}
-                </Button>
-                <div className={classes.infosContainer}>
-                    <Grid container className={classes.infos}>
-                        <Grid item md={3} xs={12} className={classes.infoGrid}>
-                            <Typography variant='p' className={classes.subtitle}>City Name</Typography>
-                            <Typography variant='h5' className={classes.infoContent}>{infoBoardCityName}</Typography>
-                        </Grid>
-
-                        <Grid item md={3} xs={12} className={classes.infoGrid}>
-                            <Typography variant='p' className={classes.subtitle}>Coords</Typography>
-                            <Typography variant='h5' className={classes.infoContent}>{lat + ', ' + lon}</Typography>
-                        </Grid>
-
-                        <Grid item md={3} xs={12} className={classes.infoGrid}>
-                            <Typography variant='p' className={classes.subtitle}>Temp</Typography>
-                            <Typography variant='h5' className={classes.infoContent}>{cityTemp}</Typography>
-                        </Grid>
-
-                        <Grid item md={3} xs={12} className={classes.infoGrid}>
-                            <Typography variant='p' className={classes.subtitle}>Music Type</Typography>
-                            <Typography variant='h5' className={classes.infoContent}>{musicType}</Typography>
-                        </Grid>
-                    </Grid>
+            {loading === true ? (
+                <div className={classes.loadingContainer}>
+                    <CircularProgress className={classes.loadingCircle}></CircularProgress>
                 </div>
-                <div className={classes.map} id='map'>
-                    <MapContainer key={lat} center={lat === '--' || lon === '--' ? ([-20.4164,-42.9086]):([lat, lon])} zoom={13} scrollWheelZoom={true} className={classes.map}>
-                        <TileLayer
-                            attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <Marker position={lat === '--' ? ([-20.4164, -42.9086]):([lat, lon])} />
-                    </MapContainer>
+            ):(
+                <div className={classes.background}>
+                    <img className={classes.image} src="logo.png" alt="Geo Music" />
+                    <TextField
+                        className={classes.textField} 
+                        label="Digite o nome da cidade" 
+                        variant="filled" 
+                        onChange={(e) =>{setCityName(e.target.value)}}
+                        onKeyDown={(e) => {if(e.key === 'Enter'){getTemp()}}}
+                    />
+                    <Button 
+                        variant='contained' 
+                        style={{
+                            backgroundColor: 'black',
+                            height: 56,
+                            borderRadius: '0px 15px 15px 0px'
+                        }}
+                        disabled={loading}
+                        onClick={ () => {getTemp()}}
+                    >
+                            {loading === true ? (<CircularProgress />):(<img src="icon-arrow.svg" alt="pesquisar"/> )}
+                    </Button>
+                    <div className={classes.infosContainer}>
+                        <Grid container className={classes.infos}>
+                            <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                <Typography variant='p' className={classes.subtitle}>City Name</Typography>
+                                <Typography variant='h5' className={classes.infoContent}>{infoBoardCityName}</Typography>
+                            </Grid>
+
+                            <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                <Typography variant='p' className={classes.subtitle}>Coords</Typography>
+                                <Typography variant='h5' className={classes.infoContent}>{lat + ', ' + lon}</Typography>
+                            </Grid>
+
+                            <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                <Typography variant='p' className={classes.subtitle}>Temp</Typography>
+                                <Typography variant='h5' className={classes.infoContent}>{cityTemp}</Typography>
+                            </Grid>
+
+                            <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                <Typography variant='p' className={classes.subtitle}>Music Type</Typography>
+                                <Typography variant='h5' className={classes.infoContent}>{musicType}</Typography>
+                            </Grid>
+                        </Grid>
+                    </div>
+                    <div className={classes.map} id='map'>
+                        <MapContainer key={lat} center={lat === '--' || lon === '--' ? ([-20.4164,-42.9086]):([lat, lon])} zoom={13} scrollWheelZoom={true} className={classes.map}>
+                            <TileLayer
+                                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <Marker position={lat === '--' ? ([-20.4164, -42.9086]):([lat, lon])} />
+                        </MapContainer>
+                    </div>
+                    {cityTemp !== '--' && 
+                        <div className={classes.listContainer}>
+                                <div>
+                                    <TableContainer>
+                                        <Table sx={{minWidth: (window.screen.width-200) }} size="medium" aria-label="a dense table">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>
+                                                        <Typography variant='h6'>City Name</Typography>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                    <Typography variant='h6'>Temp</Typography>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        <Typography variant='h6'>Musics</Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                        {musicList.map((videos) => (
+                                            <TableBody>
+                                                <TableRow>
+                                                    <TableCell component="th" scope="row">{cityName}</TableCell>
+                                                    <TableCell align="right">{cityTemp}</TableCell>
+                                                    <TableCell align="right">
+                                                        {<iframe width="150" height="100" src={"https://www.youtube.com/embed/" + videos['id']} title="YouTube video player" frameborder="0" ></iframe>}
+                                                    </TableCell>
+                                                </TableRow>
+                                            </TableBody> 
+                                        ))}
+                                        </Table>
+                                    </TableContainer>
+                            </div>
+                        </div>
+                    }
                 </div>
-                <div className={classes.listContainer}>
-                </div>
-            </div>
+            )}
         </div>
-        
     )
 }
 

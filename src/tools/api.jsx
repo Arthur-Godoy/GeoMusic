@@ -11,11 +11,13 @@ const api = {
 
     youtubeApi: {
         method: 'GET',
-        url: 'https://www.googleapis.com/youtube/v3/search',
-        params:{
-            part: 'snippet',
-            q: '',
-        },
+        url: 'https://youtube-search-results.p.rapidapi.com/youtube-search/',
+        params: {
+            q: ''},
+        headers: {
+            'x-rapidapi-host': 'youtube-search-results.p.rapidapi.com',
+            'x-rapidapi-key': 'ad7135c3e5msh51b4246a4f6fdf8p1f6fc1jsn3dec25d9dcea'
+        }
     }
 }
 
