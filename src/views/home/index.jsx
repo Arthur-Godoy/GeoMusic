@@ -1,17 +1,34 @@
-import { Button, TextField, Grid, Typography, CircularProgress, TableContainer, TableBody, TableCell, TableRow, Table, TableHead } from '@material-ui/core';
+import { Button, TextField, Grid, Typography, CircularProgress, TableContainer, TableBody, TableCell, TableRow, Table, TableHead} from '@material-ui/core';
 import Swal from 'sweetalert2';
 import { makeStyles } from '@material-ui/styles';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import api from '../../tools/api';
+import Footer from '../../components/Footer';
 import axios from 'axios';
 import React, {useState, useEffect} from 'react';
 
 const useStyles = makeStyles({
     background:{
         backgroundImage: 'url(pattern-bg.png)',
+    },
+
+    loadingContainer:{
+        position: 'absolute',
         textAlign: 'center',
+        height: '100%',
+        width:'100%'
+    },
+
+    loadingCircle:{
+        position:'relative',
+        top:'45%',
+        transform: 'translateY(-50%)'
+    },
+
+    topContentContainer:{
+        textAlign:'center',
         paddingTop: 30,
-        height: 218,
+        height: 130,
         color: 'white',
     },
 
@@ -22,12 +39,8 @@ const useStyles = makeStyles({
         marginBottom: 40
     },
 
-    paper:{
-        width: 150,
-    },
-
     textField:{
-        padding: 0,
+        paddingLeft: 0,
         height: 55,
         borderRadius: '15px 0px 0px 15px',
         backgroundColor: 'white',
@@ -72,25 +85,26 @@ const useStyles = makeStyles({
     },
 
     map:{
-        height: 600,
+        height: 625,
         zIndex: 1,
         top: 90,
         "@media (max-width: 1380px)":{
-            height: 400,
+            height: 425,
         },
         "@media (max-width: 900px)":{
-            height: 800,
+            height: 825,
         }
     },
 
-    listContainer:{
+    bottomContentContainer:{
+        width: '100%',
         background: 'white',
-        clear: 'both',
         color: 'black',
         position:'absolute',
         zIndex:3,
+        padding: 0,
+        margin: 0,
         top: 886,
-        paddingLeft: 100,
         '@media(max-width: 1380px)':{
             top: 680,
         },
@@ -99,17 +113,17 @@ const useStyles = makeStyles({
         },
     },
 
-    loadingContainer:{
-        position: 'absolute',
-        textAlign: 'center',
-        height: '100%',
-        width:'100%'
+    tableContainer:{
+        marginBottom: 20,
     },
 
-    loadingCircle:{
+    list:{
+        paddingBottom: 20,
+    },
+
+    saveButton:{
         position:'relative',
-        top:'45%',
-        transform: 'translateY(-50%)'
+        left: window.screen.width - 120,
     },
 });
 
@@ -131,7 +145,7 @@ const Home = () => {
             setInfoBoardCityName(response.data['name'] + ', ' + response.data['sys']['country'])
             setLon(response.data['coord']['lon'])
             setlat(response.data['coord']['lat']) 
-            cityTemp === response.data['main']['temp'] ? (setLoading(false)):(setCityTemp(response.data['main']['temp'] + '°C'))
+            cityTemp === response.data['main']['temp'] ? (setLoading(false)):(setCityTemp(response.data['main']['temp']))
         }).catch(function (error) {
             Swal.fire({
                 icon: 'error',
@@ -146,15 +160,16 @@ const Home = () => {
     useEffect(() => {
         if(cityTemp !== '--'){
             if(cityTemp > 32){
-                setMusicType('eletrônica')
+                musicType === 'eletrônica' ? (setTimeout(setLoading(false),2000)):(setMusicType('eletrônica'))
             }else if(cityTemp > 24){
-                setMusicType('pagode')
+                musicType === 'pagode' ? (setTimeout(setLoading(false),2000)):(setMusicType('pagode'))
             }else if(cityTemp > 16){
-                setMusicType('bossa nova')
+                musicType === 'bossa nova' ? (setTimeout(setLoading(false),2000)):(setMusicType('bossa nova'))
             }else{
-                setMusicType('lofi')
+                musicType === 'Lofi' ? (setTimeout(setLoading(false),2000)):(setMusicType('Lofi'))
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cityTemp])
 
     useEffect(() => {       
@@ -175,6 +190,37 @@ const Home = () => {
         }
     },[musicType])
 
+    const saveMusicList = () =>{
+        try{
+            let videosArray = []
+            let i = 0
+            // eslint-disable-next-line array-callback-return
+            musicList.map((videos) => {
+                let videoObject ={
+                    cityName: cityName,
+                    cityTemp: cityTemp,
+                    videoId: videos['id']
+                }
+                videosArray[i] = videoObject
+                i++;
+            })
+            localStorage.setItem(localStorage.length, JSON.stringify(videosArray))
+            Swal.fire({
+                icon: 'success',
+                title: 'lista salva',
+                showConfirmButton: false,
+            })
+        }catch(error){
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro ao salvar a lista',
+                text: 'Estamos trabalhando para concerta-lo o mais rápido possivel',
+                showConfirmButton: false,
+            })
+        }
+        
+    };
+
     return (
         <div>
             {loading === true ? (
@@ -183,92 +229,96 @@ const Home = () => {
                 </div>
             ):(
                 <div className={classes.background}>
-                    <img className={classes.image} src="logo.png" alt="Geo Music" />
-                    <TextField
-                        className={classes.textField} 
-                        label="Digite o nome da cidade" 
-                        variant="filled" 
-                        onChange={(e) =>{setCityName(e.target.value)}}
-                        onKeyDown={(e) => {if(e.key === 'Enter'){getTemp()}}}
-                    />
-                    <Button 
-                        variant='contained' 
-                        style={{
-                            backgroundColor: 'black',
-                            height: 56,
-                            borderRadius: '0px 15px 15px 0px'
-                        }}
-                        disabled={loading}
-                        onClick={ () => {getTemp()}}
-                    >
-                            {loading === true ? (<CircularProgress />):(<img src="icon-arrow.svg" alt="pesquisar"/> )}
-                    </Button>
-                    <div className={classes.infosContainer}>
-                        <Grid container className={classes.infos}>
-                            <Grid item md={3} xs={12} className={classes.infoGrid}>
-                                <Typography variant='p' className={classes.subtitle}>City Name</Typography>
-                                <Typography variant='h5' className={classes.infoContent}>{infoBoardCityName}</Typography>
-                            </Grid>
+                    <div className={classes.topContentContainer}>
+                        <img className={classes.image} src="logo.png" alt="Geo Music" />
+                        <TextField
+                            className={classes.textField} 
+                            label="Digite o nome da cidade" 
+                            variant="filled" 
+                            onChange={(e) =>{setCityName(e.target.value)}}
+                            onKeyDown={(e) => {if(e.key === 'Enter'){getTemp()}}}
+                        />
+                        <Button 
+                            variant='contained' 
+                            style={{
+                                backgroundColor: 'black',
+                                height: 56,
+                                borderRadius: '0px 15px 15px 0px'
+                            }}
+                            disabled={loading}
+                            onClick={ () => {getTemp()}}
+                        >
+                                {loading === true ? (<CircularProgress />):(<img src="icon-arrow.svg" alt="pesquisar"/> )}
+                        </Button>
+                        <div className={classes.infosContainer}>
+                            <Grid container className={classes.infos}>
+                                <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                    <Typography variant='p' className={classes.subtitle}>City Name</Typography>
+                                    <Typography variant='h5' className={classes.infoContent}>{infoBoardCityName}</Typography>
+                                </Grid>
 
-                            <Grid item md={3} xs={12} className={classes.infoGrid}>
-                                <Typography variant='p' className={classes.subtitle}>Coords</Typography>
-                                <Typography variant='h5' className={classes.infoContent}>{lat + ', ' + lon}</Typography>
-                            </Grid>
+                                <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                    <Typography variant='p' className={classes.subtitle}>Coords</Typography>
+                                    <Typography variant='h5' className={classes.infoContent}>{lat + ', ' + lon}</Typography>
+                                </Grid>
 
-                            <Grid item md={3} xs={12} className={classes.infoGrid}>
-                                <Typography variant='p' className={classes.subtitle}>Temp</Typography>
-                                <Typography variant='h5' className={classes.infoContent}>{cityTemp}</Typography>
-                            </Grid>
+                                <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                    <Typography variant='p' className={classes.subtitle}>Temp</Typography>
+                                    <Typography variant='h5' className={classes.infoContent}>{cityTemp}</Typography>
+                                </Grid>
 
-                            <Grid item md={3} xs={12} className={classes.infoGrid}>
-                                <Typography variant='p' className={classes.subtitle}>Music Type</Typography>
-                                <Typography variant='h5' className={classes.infoContent}>{musicType}</Typography>
+                                <Grid item md={3} xs={12} className={classes.infoGrid}>
+                                    <Typography variant='p' className={classes.subtitle}>Music Type</Typography>
+                                    <Typography variant='h5' className={classes.infoContent}>{musicType}</Typography>
+                                </Grid>
                             </Grid>
-                        </Grid>
+                        </div>
                     </div>
-                    <div className={classes.map} id='map'>
+                    <div id='map'>
                         <MapContainer key={lat} center={lat === '--' || lon === '--' ? ([-20.4164,-42.9086]):([lat, lon])} zoom={13} scrollWheelZoom={true} className={classes.map}>
                             <TileLayer
                                 attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
-                            <Marker position={lat === '--' ? ([-20.4164, -42.9086]):([lat, lon])} />
+                            <Marker position={lat === '--' ? ([-20.4164, -42.9086]):([lat, lon])}/>
                         </MapContainer>
                     </div>
-                    {cityTemp !== '--' && 
-                        <div className={classes.listContainer}>
-                                <div>
-                                    <TableContainer>
-                                        <Table sx={{minWidth: (window.screen.width-200) }} size="medium" aria-label="a dense table">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>
-                                                        <Typography variant='h6'>City Name</Typography>
-                                                    </TableCell>
-                                                    <TableCell align="right">
+                    <div className={classes.bottomContentContainer}>
+                        {cityTemp !== '--' && 
+                            <div className={classes.tableContainer}>
+                                <TableContainer className={classes.list}>
+                                    <Table sx={{minWidth: (window.screen.width-500) }} size="medium" aria-label="a dense table">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>
+                                                    <Typography variant='h6'>City Name</Typography>
+                                                </TableCell>
+                                                <TableCell align="right">
                                                     <Typography variant='h6'>Temp</Typography>
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <Typography variant='h6'>Musics</Typography>
-                                                    </TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                        {musicList.map((videos) => (
-                                            <TableBody>
-                                                <TableRow>
-                                                    <TableCell component="th" scope="row">{cityName}</TableCell>
-                                                    <TableCell align="right">{cityTemp}</TableCell>
-                                                    <TableCell align="right">
-                                                        {<iframe width="150" height="100" src={"https://www.youtube.com/embed/" + videos['id']} title="YouTube video player" frameborder="0" ></iframe>}
-                                                    </TableCell>
-                                                </TableRow>
-                                            </TableBody> 
-                                        ))}
-                                        </Table>
-                                    </TableContainer>
-                            </div>
-                        </div>
-                    }
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <Typography variant='h6'>Musics</Typography>
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                    {musicList.map((videos) => (
+                                        <TableBody>
+                                            <TableRow>
+                                                <TableCell component="th" scope="row">{cityName}</TableCell>
+                                                <TableCell align="right">{cityTemp}</TableCell>
+                                                <TableCell align="right">
+                                                    {<iframe width="150" height="100" src={"https://www.youtube.com/embed/" + videos['id']} title="YouTube video player" frameborder="0" ></iframe>}
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableBody> 
+                                    ))}
+                                    </Table>
+                                </TableContainer>
+                                <Button variant='contained' className={classes.saveButton} onClick={() =>{saveMusicList()}}>Salvar</Button>
+                            </div>    
+                        }
+                        <Footer />
+                    </div>
                 </div>
             )}
         </div>
