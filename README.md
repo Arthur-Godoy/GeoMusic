@@ -6,7 +6,7 @@
   -------------------------------------------------------------------------------------------------------------------------------------------------------------------
   
   1. Clone the project
-  2.Open the terminal and put this comands:    
+  2. Open the terminal and put this comands:    
   
      "yarn instal"                                                                                                                                                   
           after install run
