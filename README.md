@@ -5,10 +5,11 @@
   To see the project runing in your machine follow the steps:                                                                                                       
   -------------------------------------------------------------------------------------------------------------------------------------------------------------------
   
-  .1Clone the project
-  .2 -> In the VSCODE open the terminal and put this comands:                                                                                                         
+  1. Clone the project
+  2.Open the terminal and put this comands:                                                                                                         
     "yarn instal"                                                                                                                                                   
-          after install put this command                                                                                                                             
+          after install run
+          
      "yarn start"
      
  ----------------------------------------------------------------------------------------------------------------------------------------------------------------
